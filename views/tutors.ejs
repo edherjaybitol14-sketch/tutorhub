@@ -1,0 +1,24 @@
+<section class="container section">
+  <h1 class="page-title">Find a tutor</h1>
+  <form class="search-bar" method="GET" action="/tutors">
+    <input type="text" name="q" placeholder="Search by name or subject (e.g. Spanish, Calculus)" value="<%= q %>" />
+    <button type="submit" class="btn btn-primary">Search</button>
+  </form>
+
+  <div class="tutor-grid">
+    <% if (tutors.length === 0) { %>
+      <p class="empty-state">No tutors match your search yet. Try a different subject.</p>
+    <% } %>
+    <% tutors.forEach(function(t) { %>
+      <a class="tutor-card" href="/tutors/<%= t.id %>">
+        <div class="tutor-avatar" style="background: hsl(<%= (t.photo_seed * 47) % 360 %>, 65%, 85%);">
+          <%= t.name.split(' ').map(function(n){return n[0]}).join('') %>
+        </div>
+        <h3><%= t.name %></h3>
+        <p class="tutor-headline"><%= t.headline %></p>
+        <p class="tutor-subjects"><%= t.subjects %></p>
+        <p class="tutor-rate">$<%= t.hourly_rate %>/hr</p>
+      </a>
+    <% }); %>
+  </div>
+</section>
