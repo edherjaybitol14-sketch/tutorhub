@@ -9,6 +9,9 @@
       <p class="tutor-headline"><%= tutor.headline %></p>
       <p class="tutor-subjects"><%= tutor.subjects %></p>
       <p class="tutor-rate">$<%= tutor.hourly_rate %>/hr</p>
+      <% if (tutor.intro_video_url) { %>
+        <video class="intro-video" src="<%= tutor.intro_video_url %>" controls></video>
+      <% } %>
       <p class="tutor-bio"><%= tutor.bio %></p>
     </div>
 
@@ -26,7 +29,7 @@
             <li class="slot-item">
               <span><%= s.slot_date %> at <%= s.slot_time %></span>
               <form method="POST" action="/book/<%= s.id %>">
-                <button type="submit" class="btn btn-primary btn-sm">Book</button>
+                <button type="submit" class="btn btn-primary btn-sm">Book & pay $<%= tutor.hourly_rate %></button>
               </form>
             </li>
           <% }); %>
