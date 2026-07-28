@@ -1,0 +1,17 @@
+<section class="container section auth-section">
+  <div class="auth-card card">
+    <h1>Welcome back</h1>
+    <p class="auth-sub">Log in to book sessions or manage your tutoring schedule.</p>
+    <form method="POST" action="/login" class="stacked-form">
+      <label>Email
+        <input type="email" name="email" required autofocus value="student@tutorhub.demo" />
+      </label>
+      <label>Password
+        <input type="password" name="password" required value="password123" />
+      </label>
+      <button type="submit" class="btn btn-primary btn-block">Log in</button>
+    </form>
+    <p class="auth-switch">New here? <a href="/signup">Create an account</a></p>
+    <p class="demo-hint">Demo accounts: <code>student@tutorhub.demo</code>, <code>amara@tutorhub.demo</code> — password <code>password123</code></p>
+  </div>
+</section>
