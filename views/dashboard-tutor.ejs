@@ -1,0 +1,51 @@
+<section class="container section">
+  <h1 class="page-title">Your dashboard</h1>
+  <p class="page-sub">Signed in as <%= currentUser.name %> (tutor)</p>
+
+  <div class="dash-grid">
+    <div class="card">
+      <h2>Upcoming sessions</h2>
+      <% if (upcoming.length === 0) { %>
+        <p class="empty-state">No sessions booked yet.</p>
+      <% } else { %>
+        <ul class="booking-list">
+          <% upcoming.forEach(function(b) { %>
+            <li class="booking-item">
+              <div>
+                <strong>with <%= b.student_name %></strong>
+                <div class="booking-meta"><%= b.slot_date %> at <%= b.slot_time %></div>
+              </div>
+              <form method="POST" action="/bookings/<%= b.booking_id %>/cancel">
+                <button type="submit" class="btn btn-outline btn-sm">Cancel</button>
+              </form>
+            </li>
+          <% }); %>
+        </ul>
+      <% } %>
+    </div>
+
+    <div class="card">
+      <h2>Add availability</h2>
+      <form method="POST" action="/availability" class="stacked-form">
+        <label>Date
+          <input type="date" name="slot_date" required />
+        </label>
+        <label>Time
+          <input type="time" name="slot_time" required />
+        </label>
+        <button type="submit" class="btn btn-primary btn-block">Add slot</button>
+      </form>
+
+      <h3 class="sub-heading">Open slots</h3>
+      <% if (openSlots.length === 0) { %>
+        <p class="empty-state">No open slots yet — add one above.</p>
+      <% } else { %>
+        <ul class="slot-list">
+          <% openSlots.forEach(function(s) { %>
+            <li class="slot-item"><span><%= s.slot_date %> at <%= s.slot_time %></span></li>
+          <% }); %>
+        </ul>
+      <% } %>
+    </div>
+  </div>
+</section>
