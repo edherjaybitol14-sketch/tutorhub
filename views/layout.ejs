@@ -17,6 +17,9 @@
         <a href="/tutors">Find a tutor</a>
         <% if (currentUser) { %>
           <a href="/dashboard">Dashboard</a>
+          <% if (currentUser.role === 'tutor') { %>
+            <a href="/profile/edit">Edit profile</a>
+          <% } %>
           <form action="/logout" method="POST" class="inline-form">
             <button type="submit" class="link-btn">Log out</button>
           </form>
