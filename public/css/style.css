@@ -157,6 +157,7 @@ h1, h2, h3 { font-weight: 800; line-height: 1.2; margin: 0 0 8px; }
 .tutor-subjects { font-size: 13px; color: var(--maize-dark); font-weight: 700; }
 .tutor-rate { font-weight: 800; margin-top: 8px; }
 .tutor-bio { color: var(--ink-soft); margin-top: 16px; max-width: 520px; }
+.intro-video { width: 100%; max-width: 480px; border-radius: var(--radius); margin-top: 16px; background: #000; }
 .empty-state { color: var(--ink-soft); }
 
 /* ---- How it works ---- */
@@ -190,6 +191,8 @@ h1, h2, h3 { font-weight: 800; line-height: 1.2; margin: 0 0 8px; }
 }
 .slot-item:last-child, .booking-item:last-child { border-bottom: none; }
 .booking-meta { color: var(--ink-soft); font-size: 13px; }
+.paid-badge { color: var(--success); font-weight: 700; }
+.earnings-total { color: var(--ink-soft); font-size: 14px; margin-bottom: 16px; }
 
 /* ---- Auth ---- */
 .auth-section { display: flex; justify-content: center; padding: 64px 0; }
