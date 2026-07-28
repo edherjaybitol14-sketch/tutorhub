@@ -24,7 +24,8 @@ CREATE TABLE IF NOT EXISTS tutor_profiles (
   bio TEXT,
   subjects TEXT,
   hourly_rate REAL DEFAULT 20,
-  photo_seed TEXT
+  photo_seed TEXT,
+  intro_video_url TEXT
 );
 
 CREATE TABLE IF NOT EXISTS availability (
@@ -42,9 +43,25 @@ CREATE TABLE IF NOT EXISTS bookings (
   tutor_id INTEGER NOT NULL REFERENCES users(id),
   availability_id INTEGER NOT NULL REFERENCES availability(id),
   status TEXT DEFAULT 'confirmed',
+  payment_status TEXT DEFAULT 'unpaid',
+  amount REAL,
+  stripe_session_id TEXT,
   created_at TEXT DEFAULT (datetime('now'))
 );
 `);
+
+// Lightweight migrations for databases created before these columns existed.
+function tryAlter(sql) {
+  try {
+    db.exec(sql);
+  } catch (e) {
+    // Column already exists — ignore.
+  }
+}
+tryAlter('ALTER TABLE tutor_profiles ADD COLUMN intro_video_url TEXT');
+tryAlter("ALTER TABLE bookings ADD COLUMN payment_status TEXT DEFAULT 'unpaid'");
+tryAlter('ALTER TABLE bookings ADD COLUMN amount REAL');
+tryAlter('ALTER TABLE bookings ADD COLUMN stripe_session_id TEXT');
 
 // Seed demo data on first run
 const userCount = db.prepare('SELECT COUNT(*) as c FROM users').get().c;
