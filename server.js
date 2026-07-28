@@ -3,10 +3,44 @@ const session = require('express-session');
 const bcrypt = require('bcryptjs');
 const path = require('path');
 const expressLayouts = require('express-ejs-layouts');
+const multer = require('multer');
+const cloudinary = require('cloudinary').v2;
 const db = require('./db');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// ---------- Cloudinary (video storage) ----------
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+const cloudinaryConfigured = Boolean(
+  process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET
+);
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB
+});
+
+function uploadVideoBuffer(buffer) {
+  return new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      { resource_type: 'video', folder: 'tutorhub-intros' },
+      (error, result) => {
+        if (error) return reject(error);
+        resolve(result);
+      }
+    );
+    stream.end(buffer);
+  });
+}
+
+// ---------- Stripe (payments) ----------
+const stripeConfigured = Boolean(process.env.STRIPE_SECRET_KEY);
+const stripe = stripeConfigured ? require('stripe')(process.env.STRIPE_SECRET_KEY) : null;
 
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
@@ -77,7 +111,7 @@ app.get('/tutors', (req, res) => {
 app.get('/tutors/:id', (req, res) => {
   const tutor = db
     .prepare(
-      `SELECT u.id, u.name, tp.headline, tp.bio, tp.subjects, tp.hourly_rate, tp.photo_seed
+      `SELECT u.id, u.name, tp.headline, tp.bio, tp.subjects, tp.hourly_rate, tp.photo_seed, tp.intro_video_url
        FROM users u JOIN tutor_profiles tp ON tp.user_id = u.id WHERE u.id = ?`
     )
     .get(req.params.id);
@@ -142,6 +176,47 @@ app.post('/logout', (req, res) => {
   req.session.destroy(() => res.redirect('/'));
 });
 
+// ---------- Tutor profile editing ----------
+
+app.get('/profile/edit', requireAuth('tutor'), (req, res) => {
+  const profile = db.prepare('SELECT * FROM tutor_profiles WHERE user_id = ?').get(req.session.user.id);
+  res.render('profile-edit', { title: 'Edit your profile', profile, cloudinaryConfigured });
+});
+
+app.post('/profile/edit', requireAuth('tutor'), upload.single('intro_video'), async (req, res) => {
+  const { headline, bio, subjects, hourly_rate } = req.body;
+  if (!headline || !bio || !subjects || !hourly_rate) {
+    return res.redirect('/profile/edit?error=Please fill in all fields');
+  }
+
+  let videoUrl = null;
+  if (req.file) {
+    if (!cloudinaryConfigured) {
+      return res.redirect('/profile/edit?error=Video upload is not configured yet');
+    }
+    try {
+      const result = await uploadVideoBuffer(req.file.buffer);
+      videoUrl = result.secure_url;
+    } catch (e) {
+      return res.redirect('/profile/edit?error=Video upload failed — try a smaller file');
+    }
+  }
+
+  if (videoUrl) {
+    db.prepare(
+      `UPDATE tutor_profiles SET headline = ?, bio = ?, subjects = ?, hourly_rate = ?, intro_video_url = ?
+       WHERE user_id = ?`
+    ).run(headline, bio, subjects, hourly_rate, videoUrl, req.session.user.id);
+  } else {
+    db.prepare(
+      `UPDATE tutor_profiles SET headline = ?, bio = ?, subjects = ?, hourly_rate = ?
+       WHERE user_id = ?`
+    ).run(headline, bio, subjects, hourly_rate, req.session.user.id);
+  }
+
+  res.redirect('/dashboard?success=Profile updated');
+});
+
 // ---------- Dashboard ----------
 
 app.get('/dashboard', requireAuth(), (req, res) => {
@@ -149,7 +224,8 @@ app.get('/dashboard', requireAuth(), (req, res) => {
   if (user.role === 'tutor') {
     const upcoming = db
       .prepare(
-        `SELECT b.id as booking_id, a.slot_date, a.slot_time, u.name as student_name
+        `SELECT b.id as booking_id, a.slot_date, a.slot_time, u.name as student_name,
+                b.payment_status, b.amount
          FROM bookings b
          JOIN availability a ON a.id = b.availability_id
          JOIN users u ON u.id = b.student_id
@@ -164,12 +240,19 @@ app.get('/dashboard', requireAuth(), (req, res) => {
          ORDER BY slot_date, slot_time`
       )
       .all(user.id);
-    return res.render('dashboard-tutor', { title: 'Your dashboard', upcoming, openSlots });
+    const earnings = db
+      .prepare(
+        `SELECT COALESCE(SUM(amount), 0) as total FROM bookings
+         WHERE tutor_id = ? AND payment_status = 'paid'`
+      )
+      .get(user.id).total;
+    return res.render('dashboard-tutor', { title: 'Your dashboard', upcoming, openSlots, earnings });
   }
 
   const upcoming = db
     .prepare(
-      `SELECT b.id as booking_id, a.slot_date, a.slot_time, u.name as tutor_name, u.id as tutor_id
+      `SELECT b.id as booking_id, a.slot_date, a.slot_time, u.name as tutor_name, u.id as tutor_id,
+              b.payment_status, b.amount
        FROM bookings b
        JOIN availability a ON a.id = b.availability_id
        JOIN users u ON u.id = b.tutor_id
@@ -180,18 +263,89 @@ app.get('/dashboard', requireAuth(), (req, res) => {
   res.render('dashboard-student', { title: 'Your dashboard', upcoming });
 });
 
-// ---------- Booking ----------
+// ---------- Booking + payment ----------
 
-app.post('/book/:slotId', requireAuth('student'), (req, res) => {
+app.post('/book/:slotId', requireAuth('student'), async (req, res) => {
   const slot = db.prepare('SELECT * FROM availability WHERE id = ?').get(req.params.slotId);
   if (!slot || slot.is_booked) {
     return res.redirect('/tutors?error=That slot is no longer available');
   }
-  db.prepare('UPDATE availability SET is_booked = 1 WHERE id = ?').run(slot.id);
-  db.prepare(
-    'INSERT INTO bookings (student_id, tutor_id, availability_id) VALUES (?, ?, ?)'
-  ).run(req.session.user.id, slot.tutor_id, slot.id);
-  res.redirect('/dashboard?success=Session booked!');
+  const tutor = db
+    .prepare(
+      `SELECT u.id, u.name, tp.hourly_rate FROM users u
+       JOIN tutor_profiles tp ON tp.user_id = u.id WHERE u.id = ?`
+    )
+    .get(slot.tutor_id);
+
+  if (!stripeConfigured) {
+    return res.redirect(`/tutors/${slot.tutor_id}?error=Payments are not set up yet`);
+  }
+
+  try {
+    const checkoutSession = await stripe.checkout.sessions.create({
+      mode: 'payment',
+      payment_method_types: ['card'],
+      line_items: [
+        {
+          price_data: {
+            currency: 'usd',
+            product_data: { name: `Tutoring session with ${tutor.name}` },
+            unit_amount: Math.round(tutor.hourly_rate * 100),
+          },
+          quantity: 1,
+        },
+      ],
+      success_url: `${req.protocol}://${req.get('host')}/booking/confirm?slot_id=${slot.id}&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${req.protocol}://${req.get('host')}/tutors/${slot.tutor_id}?error=Payment cancelled`,
+      metadata: {
+        slot_id: String(slot.id),
+        student_id: String(req.session.user.id),
+        tutor_id: String(slot.tutor_id),
+      },
+    });
+    res.redirect(303, checkoutSession.url);
+  } catch (e) {
+    res.redirect(`/tutors/${slot.tutor_id}?error=Could not start checkout`);
+  }
+});
+
+app.get('/booking/confirm', requireAuth('student'), async (req, res) => {
+  const { slot_id, session_id } = req.query;
+  if (!slot_id || !session_id) {
+    return res.redirect('/dashboard?error=Missing confirmation details');
+  }
+
+  const alreadyBooked = db.prepare('SELECT id FROM bookings WHERE stripe_session_id = ?').get(session_id);
+  if (alreadyBooked) {
+    return res.redirect('/dashboard?success=Session booked!');
+  }
+
+  try {
+    const checkoutSession = await stripe.checkout.sessions.retrieve(session_id);
+    if (checkoutSession.payment_status !== 'paid') {
+      return res.redirect('/dashboard?error=Payment was not completed');
+    }
+
+    const slot = db.prepare('SELECT * FROM availability WHERE id = ?').get(slot_id);
+    if (!slot || slot.is_booked) {
+      return res.redirect('/dashboard?error=That slot was booked by someone else — contact support for a refund');
+    }
+
+    db.prepare('UPDATE availability SET is_booked = 1 WHERE id = ?').run(slot.id);
+    db.prepare(
+      `INSERT INTO bookings (student_id, tutor_id, availability_id, payment_status, amount, stripe_session_id)
+       VALUES (?, ?, ?, 'paid', ?, ?)`
+    ).run(
+      req.session.user.id,
+      slot.tutor_id,
+      slot.id,
+      (checkoutSession.amount_total || 0) / 100,
+      session_id
+    );
+    res.redirect('/dashboard?success=Payment successful — session booked!');
+  } catch (e) {
+    res.redirect('/dashboard?error=Could not confirm payment');
+  }
 });
 
 app.post('/bookings/:id/cancel', requireAuth(), (req, res) => {
