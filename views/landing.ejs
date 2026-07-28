@@ -1,0 +1,56 @@
+<section class="hero">
+  <div class="container hero-inner">
+    <div class="hero-copy">
+      <span class="eyebrow">1-on-1 online tutoring</span>
+      <h1>Learn faster with a tutor who gets you.</h1>
+      <p>Book real lessons with real tutors — language, math, test prep, and more.
+         Pick a time that works, meet online, and track every session in one place.</p>
+      <div class="hero-actions">
+        <a href="/tutors" class="btn btn-primary btn-lg">Find a tutor</a>
+        <a href="/signup" class="btn btn-outline btn-lg">Become a tutor</a>
+      </div>
+    </div>
+    <div class="hero-art" aria-hidden="true">
+      <div class="hero-card card-1">📚 Calculus</div>
+      <div class="hero-card card-2">🗣️ Spanish</div>
+      <div class="hero-card card-3">✍️ IELTS Prep</div>
+    </div>
+  </div>
+</section>
+
+<section class="container section">
+  <h2 class="section-title">Featured tutors</h2>
+  <div class="tutor-grid">
+    <% tutors.forEach(function(t) { %>
+      <a class="tutor-card" href="/tutors/<%= t.id %>">
+        <div class="tutor-avatar" style="background: hsl(<%= (t.photo_seed * 47) % 360 %>, 65%, 85%);">
+          <%= t.name.split(' ').map(function(n){return n[0]}).join('') %>
+        </div>
+        <h3><%= t.name %></h3>
+        <p class="tutor-headline"><%= t.headline %></p>
+        <p class="tutor-rate">$<%= t.hourly_rate %>/hr</p>
+      </a>
+    <% }); %>
+  </div>
+</section>
+
+<section class="container section how-it-works">
+  <h2 class="section-title">How it works</h2>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <h3>Find your tutor</h3>
+      <p>Browse subjects and profiles to find the right match.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <h3>Pick a time</h3>
+      <p>Choose from real open slots on their calendar.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <h3>Learn & grow</h3>
+      <p>Meet, learn, and manage every session from your dashboard.</p>
+    </div>
+  </div>
+</section>
