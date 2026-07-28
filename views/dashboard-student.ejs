@@ -12,7 +12,12 @@
           <li class="booking-item">
             <div>
               <strong>with <a href="/tutors/<%= b.tutor_id %>"><%= b.tutor_name %></a></strong>
-              <div class="booking-meta"><%= b.slot_date %> at <%= b.slot_time %></div>
+              <div class="booking-meta">
+                <%= b.slot_date %> at <%= b.slot_time %>
+                <% if (b.payment_status === 'paid') { %>
+                  · <span class="paid-badge">Paid $<%= b.amount.toFixed(2) %></span>
+                <% } %>
+              </div>
             </div>
             <form method="POST" action="/bookings/<%= b.booking_id %>/cancel">
               <button type="submit" class="btn btn-outline btn-sm">Cancel</button>
