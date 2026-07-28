@@ -1,0 +1,37 @@
+<section class="container section profile-section">
+  <a href="/tutors" class="back-link">&larr; All tutors</a>
+  <div class="profile-grid">
+    <div class="profile-main">
+      <div class="tutor-avatar tutor-avatar-lg" style="background: hsl(<%= (tutor.photo_seed * 47) % 360 %>, 65%, 85%);">
+        <%= tutor.name.split(' ').map(function(n){return n[0]}).join('') %>
+      </div>
+      <h1><%= tutor.name %></h1>
+      <p class="tutor-headline"><%= tutor.headline %></p>
+      <p class="tutor-subjects"><%= tutor.subjects %></p>
+      <p class="tutor-rate">$<%= tutor.hourly_rate %>/hr</p>
+      <p class="tutor-bio"><%= tutor.bio %></p>
+    </div>
+
+    <div class="profile-booking card">
+      <h2>Book a session</h2>
+      <% if (!currentUser) { %>
+        <p>Please <a href="/login">log in</a> as a student to book a session with <%= tutor.name %>.</p>
+      <% } else if (currentUser.role !== 'student') { %>
+        <p>Only student accounts can book sessions.</p>
+      <% } else if (slots.length === 0) { %>
+        <p>No open slots right now — check back soon.</p>
+      <% } else { %>
+        <ul class="slot-list">
+          <% slots.forEach(function(s) { %>
+            <li class="slot-item">
+              <span><%= s.slot_date %> at <%= s.slot_time %></span>
+              <form method="POST" action="/book/<%= s.id %>">
+                <button type="submit" class="btn btn-primary btn-sm">Book</button>
+              </form>
+            </li>
+          <% }); %>
+        </ul>
+      <% } %>
+    </div>
+  </div>
+</section>
