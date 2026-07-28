@@ -1,0 +1,44 @@
+<section class="container section auth-section">
+  <div class="auth-card card" style="max-width: 560px;">
+    <h1>Edit your profile</h1>
+    <p class="auth-sub">This is what students see on your tutor profile page.</p>
+
+    <form method="POST" action="/profile/edit" enctype="multipart/form-data" class="stacked-form">
+      <label>Headline
+        <input type="text" name="headline" required value="<%= profile.headline %>" placeholder="e.g. Spanish & French Conversation Coach" />
+      </label>
+      <label>Bio
+        <textarea name="bio" rows="5" required placeholder="Tell students about your teaching style and experience."><%= profile.bio %></textarea>
+      </label>
+      <label>Subjects (comma-separated)
+        <input type="text" name="subjects" required value="<%= profile.subjects %>" placeholder="e.g. Spanish, French" />
+      </label>
+      <label>Hourly rate (USD)
+        <input type="number" name="hourly_rate" min="1" step="1" required value="<%= profile.hourly_rate %>" />
+      </label>
+
+      <label>Self-introduction video
+        <% if (profile.intro_video_url) { %>
+          <video class="intro-video-preview" src="<%= profile.intro_video_url %>" controls></video>
+          <span class="field-hint">Upload a new file below to replace it.</span>
+        <% } %>
+        <input type="file" name="intro_video" accept="video/*" <%= cloudinaryConfigured ? '' : 'disabled' %> />
+        <% if (!cloudinaryConfigured) { %>
+          <span class="field-hint">Video upload isn't configured yet — ask the site owner to add Cloudinary credentials.</span>
+        <% } else { %>
+          <span class="field-hint">MP4 recommended, up to 50MB.</span>
+        <% } %>
+      </label>
+
+      <button type="submit" class="btn btn-primary btn-block">Save changes</button>
+    </form>
+  </div>
+</section>
+
+<style>
+  .stacked-form textarea {
+    padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border); font-size: 15px; font-family: inherit; resize: vertical;
+  }
+  .field-hint { font-weight: 400; font-size: 12px; color: var(--ink-soft); }
+  .intro-video-preview { width: 100%; border-radius: 10px; margin-bottom: 8px; background: #000; }
+</style>
