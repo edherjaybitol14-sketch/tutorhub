@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><%= typeof title !== 'undefined' ? title + ' · TutorHub' : 'TutorHub' %></title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="logo" href="/">
+        <span class="logo-mark">T</span>
+        <span class="logo-text">Tutor<strong>Hub</strong></span>
+      </a>
+      <nav class="main-nav">
+        <a href="/tutors">Find a tutor</a>
+        <% if (currentUser) { %>
+          <a href="/dashboard">Dashboard</a>
+          <form action="/logout" method="POST" class="inline-form">
+            <button type="submit" class="link-btn">Log out</button>
+          </form>
+          <span class="nav-user">Hi, <%= currentUser.name.split(' ')[0] %></span>
+        <% } else { %>
+          <a href="/login">Log in</a>
+          <a class="btn btn-primary btn-sm" href="/signup">Sign up free</a>
+        <% } %>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <div class="container">
+      <% if (error) { %><div class="flash flash-error"><%= error %></div><% } %>
+      <% if (success) { %><div class="flash flash-success"><%= success %></div><% } %>
+    </div>
+    <%- body %>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <span>&copy; <%= new Date().getFullYear() %> TutorHub. Built for learners everywhere.</span>
+      <span class="footer-tag">Demo login: student@tutorhub.demo / password123</span>
+    </div>
+  </footer>
+</body>
+</html>
