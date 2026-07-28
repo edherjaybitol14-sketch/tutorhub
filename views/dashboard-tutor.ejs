@@ -5,6 +5,7 @@
   <div class="dash-grid">
     <div class="card">
       <h2>Upcoming sessions</h2>
+      <p class="earnings-total">Total earned: <strong>$<%= earnings.toFixed(2) %></strong></p>
       <% if (upcoming.length === 0) { %>
         <p class="empty-state">No sessions booked yet.</p>
       <% } else { %>
@@ -13,7 +14,12 @@
             <li class="booking-item">
               <div>
                 <strong>with <%= b.student_name %></strong>
-                <div class="booking-meta"><%= b.slot_date %> at <%= b.slot_time %></div>
+                <div class="booking-meta">
+                  <%= b.slot_date %> at <%= b.slot_time %>
+                  <% if (b.payment_status === 'paid') { %>
+                    · <span class="paid-badge">Paid $<%= b.amount.toFixed(2) %></span>
+                  <% } %>
+                </div>
               </div>
               <form method="POST" action="/bookings/<%= b.booking_id %>/cancel">
                 <button type="submit" class="btn btn-outline btn-sm">Cancel</button>
