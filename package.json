@@ -4,7 +4,7 @@
   "description": "A fully functional tutoring booking platform with maize branding.",
   "main": "server.js",
   "engines": {
-    "node": ">=20.10.0"
+    "node": ">=22.5.0"
   },
   "scripts": {
     "start": "node server.js"
